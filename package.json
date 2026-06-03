@@ -1,0 +1,20 @@
+{
+  "name": "chat",
+  "version": "1.0.0",
+  "description": "This is a chat application on top of Web3 and new technologies libp2p",
+  "license": "ISC",
+  "author": "Yves",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^17.0.0",
+    "@chainsafe/libp2p-yamux": "^8.0.1",
+    "@libp2p/tcp": "^11.0.21",
+    "@libp2p/websockets": "^10.1.14",
+    "@multiformats/multiaddr": "^13.0.3",
+    "libp2p": "^3.3.3"
+  }
+}
