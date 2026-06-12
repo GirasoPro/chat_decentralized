@@ -2,7 +2,7 @@ import { createLibp2p } from 'libp2p'
 import { tcp } from '@libp2p/tcp'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
-import { gossipsub } from '@chainsafe/libp2p-gossipsub'
+import { gossipsub } from '@libp2p/gossipsub'
 import { mdns } from '@libp2p/mdns'
 import { identify } from '@libp2p/identify'
 
@@ -20,9 +20,7 @@ export async function createNode(privateKey, port) {
       identify: identify(),
       pubsub: gossipsub({
         emitSelf: false,
-        fallbackToFloodsub: false,
-        floodPublish: true,
-        allowPublishToZeroTopicPeers: true
+        fallbackToFloodsub: true
       })
     }
   })
