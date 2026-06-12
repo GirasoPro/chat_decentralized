@@ -22,9 +22,9 @@ export async function createNode(privateKey, port) {
         allowPublishToZeroTopicPeers: true,
         fallbackToFloodsub: true,
         emitSelf: true,
-        canRelay: true,
+        // canRelay: true,
         floodPublish: true,
-        doPX: true
+        // doPX: true
       })
     }
   })

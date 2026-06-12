@@ -12,6 +12,7 @@ console.log(`Node started on ${PORT}`)
 console.log(node.peerId.toString())
 
 // enable pubsub chat
+await initDiscovery(node)
 await initChat(node, PORT)
 
 // simple CLI input (reverted to original working code style)

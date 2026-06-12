@@ -1,33 +1,18 @@
+const dialedPeers = new Set()
+
 export function initDiscovery(node) {
-  const dialedPeers = new Set()
-
   node.addEventListener('peer:discovery', async (evt) => {
-    const peerId = evt.detail.id
-    const peerIdStr = peerId.toString()
+    const peer = evt.detail
+    console.log('Discovered:', peer.id.toString())
 
-    // Fix discovery/dial loop: Use a Set guard
-    if (dialedPeers.has(peerIdStr)) return
-
-    // Never dial peers already connected
-    const connections = node.getConnections(peerId)
-    if (connections.length > 0) {
-      dialedPeers.add(peerIdStr)
-      return
-    }
-
-    dialedPeers.add(peerIdStr)
-    console.log(`[Discovery] Discovered: ${peerIdStr}`)
+    if (dialedPeers.has(peer.id.toString())) return
+    dialedPeers.add(peer.id.toString())
 
     try {
-      await node.dial(peerId)
-      console.log(`[Discovery] Dialed: ${peerIdStr}`)
+      await node.dial(peer.id)
+      console.log('Connected:', peer.id.toString())
     } catch (err) {
-      dialedPeers.delete(peerIdStr)
+      console.log('Dial failed:', err.message)
     }
-  })
-
-  node.addEventListener('peer:connect', (evt) => {
-    const peerId = evt.detail.remotePeer || evt.detail
-    console.log(`[Network] Connected: ${peerId.toString()}`)
   })
 }
