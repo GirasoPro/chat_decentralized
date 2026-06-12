@@ -19,12 +19,9 @@ export async function createNode(privateKey, port) {
     services: {
       identify: identify(),
       pubsub: gossipsub({
-        allowPublishToZeroTopicPeers: true,
-        fallbackToFloodsub: true,
-        emitSelf: true,
-        // canRelay: true,
-        floodPublish: true,
-        // doPX: true
+        emitSelf: false,
+        fallbackToFloodsub: false,
+        allowPublishToZeroTopicPeers: true
       })
     }
   })

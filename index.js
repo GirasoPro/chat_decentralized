@@ -8,14 +8,11 @@ const PORT = process.argv[2] || 4001
 const privateKey = await loadIdentity(PORT)
 const node = await createNode(privateKey, PORT)
 
-console.log(`Node started on ${PORT}`)
-console.log(node.peerId.toString())
-
 // enable pubsub chat
 await initDiscovery(node)
 await initChat(node, PORT)
 
-// simple CLI input (reverted to original working code style)
+// simple CLI input to be sent to topic mesh
 process.stdin.on('data', (data) => {
   const msg = data.toString().trim()
 
