@@ -8,47 +8,42 @@ export async function initChat(node, port) {
   node.services.pubsub.addEventListener(
     'subscription-change',
     (evt) => {
-      console.log('SUB CHANGE:', evt.detail)
+      const subs = evt.detail.subscriptions?.map(s => s.topic).join(',')
+      console.log(`[${port}] subscription-change: ${subs || '(none)'}`)
     }
   )
 
+  // Listen to gossipsub-specific message event (contains propagation info)
   node.services.pubsub.addEventListener(
-    'message',
+    'gossipsub:message',
     (evt) => {
-      if (evt.detail.topic !== TOPIC) return
+      const { propagationSource, msg } = evt.detail
+      if (msg.topic !== TOPIC) return
 
-      const msg = new TextDecoder().decode(evt.detail.data)
+      // Avoid handling our own messages (double-check, gossipsub usually filters)
+      if (propagationSource?.toString?.() === node.peerId.toString()) return
 
-      console.log(`NODE ${port} RECEIVED FROM ${evt.detail.from.toString().slice(-8)}`)
-      console.log(msg)
+      const text = new TextDecoder().decode(msg.data)
+      console.log(`NODE ${port} RECEIVED FROM ${propagationSource?.toString().slice(-8)}`)
+      console.log(text)
     }
   )
 
   await node.services.pubsub.subscribe(TOPIC)
 
-  // 🔥 give GossipSub time to build mesh
+  // give GossipSub time to build mesh
   await new Promise(r => setTimeout(r, 2000))
-
-  console.log('Topics:', node.services.pubsub.getTopics())
-  console.log('Protocols:', node.services.pubsub.multicodecs)
-
-  setInterval(() => {
-    console.log('\n----- DEBUG -----')
-    console.log('Topics:', node.services.pubsub.getTopics())
-    console.log('Connections:', node.getConnections().length)
-    console.log('Peers:', node.services.pubsub.getPeers())
-  }, 5000)
 
   node.sendChat = async (text) => {
     const msg = `[${port}] ${text}`
 
     try {
-      await node.services.pubsub.publish(
+      const res = await node.services.pubsub.publish(
         TOPIC,
         new TextEncoder().encode(msg)
       )
 
-      console.log('Published')
+      console.log(`[${port}] Published -> ${res.recipients.length} recipients`)
     } catch (err) {
       console.error('Publish failed:', err.message)
     }
