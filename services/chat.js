@@ -3,34 +3,65 @@ const TOPIC = 'giraso-chat'
 export async function initChat(node, port) {
   if (node.__chat_initialized) return
   node.__chat_initialized = true
-  console.log(`Joining topic: ${TOPIC}`)
 
-  node.services.pubsub.addEventListener('subscription-change', (evt) => {
-    const subs = evt.detail.subscriptions?.map(s => s.topic).join(',')
-    console.log(`[${port}] SUB CHANGE: ${subs || '(none)'}`)
-  })
+  const joinedRooms = new Set()
+
+  const joinRoom = async (room) => {
+    if (joinedRooms.has(room)) return
+    await node.services.pubsub.subscribe(room)
+    joinedRooms.add(room)
+    console.log(`[${port}] joined room: ${room}`)
+  }
+
+  const leaveRoom = async (room) => {
+    if (!joinedRooms.has(room)) return
+    await node.services.pubsub.unsubscribe(room)
+    joinedRooms.delete(room)
+    console.log(`[${port}] left room: ${room}`)
+  }
+
+  const sendToRoom = async (room, message) => {
+    if (!joinedRooms.has(room)) {
+      console.error(`[${port}] Publish failed: not joined to room ${room}`)
+      return
+    }
+
+    const payload = JSON.stringify({
+      room,
+      from: port,
+      text: message,
+      timestamp: Date.now()
+    })
+
+    try {
+      const res = await node.services.pubsub.publish(room, new TextEncoder().encode(payload))
+      console.log(`[${port}] Published -> ${res.recipients.length} recipients`)
+    } catch (err) {
+      console.error(`[${port}] Publish failed: ${err.message}`)
+    }
+  }
+
+  node.joinRoom = joinRoom
+  node.leaveRoom = leaveRoom
+  node.sendToRoom = sendToRoom
+  node.sendChat = async (text) => sendToRoom(TOPIC, text)
 
   node.services.pubsub.addEventListener('gossipsub:message', (evt) => {
     const { propagationSource, msg } = evt.detail
-    if (msg.topic !== TOPIC) return
-    if (propagationSource?.toString?.() === node.peerId.toString()) return
+    const room = msg.topic
+    if (!joinedRooms.has(room)) return
 
-    const text = new TextDecoder().decode(msg.data)
-    console.log(`NODE ${port} RECEIVED FROM ${propagationSource?.toString().slice(-8)}`)
-    console.log(text)
+    let data
+    try {
+      data = JSON.parse(new TextDecoder().decode(msg.data))
+    } catch {
+      return
+    }
+
+    const peerId = propagationSource?.toString?.() ?? 'unknown'
+    const text = String(data.text ?? '')
+    console.log(`[${room}] ${peerId}: ${text}`)
   })
 
-  await node.services.pubsub.subscribe(TOPIC)
-  await new Promise(r => setTimeout(r, 2000))
-
-  node.sendChat = async (text) => {
-    const msg = `[${port}] ${text}`
-
-    try {
-      const res = await node.services.pubsub.publish(TOPIC, new TextEncoder().encode(msg))
-      console.log(`[${port}] Published -> ${res.recipients.length} recipients`)
-    } catch (err) {
-      console.error('Publish failed:', err.message)
-    }
-  }
+  await joinRoom(TOPIC)
 }
