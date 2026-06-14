@@ -1,8 +1,9 @@
-const TOPIC = 'giraso-chat'
+const TOPIC = 'all'
 
 export async function initChat(node, port) {
   if (node.__chat_initialized) return
   node.__chat_initialized = true
+  node.activeRoom = null
 
   const joinedRooms = new Set()
 
@@ -41,10 +42,16 @@ export async function initChat(node, port) {
     }
   }
 
-  node.joinRoom = joinRoom
-  node.leaveRoom = leaveRoom
-  node.sendToRoom = sendToRoom
-  node.sendChat = async (text) => sendToRoom(TOPIC, text)
+  node.chat = {
+    joinRoom,
+    leaveRoom,
+    sendToRoom,
+    joinedRooms
+  }
+  node.chat.joinRoom = joinRoom
+  node.chat.leaveRoom = leaveRoom
+  node.chat.sendToRoom = sendToRoom
+  node.chat.sendChat = async (text) => sendToRoom(TOPIC, text)
 
   node.services.pubsub.addEventListener('gossipsub:message', (evt) => {
     const { propagationSource, msg } = evt.detail
@@ -60,7 +67,7 @@ export async function initChat(node, port) {
 
     const peerId = propagationSource?.toString?.() ?? 'unknown'
     const text = String(data.text ?? '')
-    console.log(`[${room}] ${peerId}: ${text}`)
+    console.log(`[${room}] ${peerId.slice(0, 8)}: ${text}`)
   })
 
   await joinRoom(TOPIC)
