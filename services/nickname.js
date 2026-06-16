@@ -3,7 +3,7 @@ import path from 'path'
 
 const NICKNAME_DIR = './keys'
 
-export function loadNickname(port, defaultNickname) {
+export const loadNickname = (port, defaultNickname) => {
   const filename = path.join(NICKNAME_DIR, `nickname-${port}.json`)
   try {
     if (!fs.existsSync(filename)) return defaultNickname
@@ -18,7 +18,7 @@ export function loadNickname(port, defaultNickname) {
   return defaultNickname
 }
 
-export function saveNickname(port, nickname) {
+export const saveNickname = (port, nickname) => {
   const filename = path.join(NICKNAME_DIR, `nickname-${port}.json`)
   fs.mkdirSync(NICKNAME_DIR, { recursive: true })
   fs.writeFileSync(filename, JSON.stringify({ nickname: nickname.trim() }))

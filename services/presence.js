@@ -3,7 +3,7 @@ const PRESENCE_INTERVAL = 30000
 const OFFLINE_THRESHOLD = 90000
 const ENCODER = new TextEncoder()
 
-export function initPresence(node, initialNickname, onNewContact, onNicknameChange) {
+export const initPresence = (node, initialNickname, onNewContact, onNicknameChange) => {
   const peerId = node.peerId.toString()
   let nickname = initialNickname || `user-${peerId.slice(-8)}`
   const contacts = new Map()
@@ -105,6 +105,11 @@ export function initPresence(node, initialNickname, onNewContact, onNicknameChan
   const getContact = (id) => contacts.get(id)
   const getNickname = (id) => contacts.get(id)?.nickname
   const getDisplayName = (id) => contacts.get(id)?.nickname || getShortPeerId(id)
+  const getPeerIdByNickname = (name) => {
+    const matches = [...contacts.values()].filter((contact) => contact.nickname === name)
+    if (matches.length === 1) return matches[0].peerId
+    return matches.length > 1 ? null : undefined
+  }
 
   node.presence = {
     get nickname() {
@@ -116,6 +121,7 @@ export function initPresence(node, initialNickname, onNewContact, onNicknameChan
     getNickname,
     getDisplayName,
     getContacts,
+    getPeerIdByNickname,
     setNickname
   }
 
@@ -123,6 +129,7 @@ export function initPresence(node, initialNickname, onNewContact, onNicknameChan
     start,
     setNickname,
     getContacts,
-    getDisplayName
+    getDisplayName,
+    getPeerIdByNickname
   }
 }

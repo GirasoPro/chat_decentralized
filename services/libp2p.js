@@ -6,7 +6,7 @@ import { gossipsub } from '@libp2p/gossipsub'
 import { mdns } from '@libp2p/mdns'
 import { identify } from '@libp2p/identify'
 
-export async function createNode(privateKey, port) {
+export const createNode = async (privateKey, port) => {
   const node = await createLibp2p({
     privateKey,
     addresses: {

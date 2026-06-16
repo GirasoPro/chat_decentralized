@@ -1,6 +1,6 @@
 const dialedPeers = new Set()
 
-export function initDiscovery(node) {
+export const initDiscovery = (node) => {
   node.addEventListener('peer:discovery', async (evt) => {
     const peer = evt.detail
     const idStr = peer?.id?.toString?.() ?? String(peer)

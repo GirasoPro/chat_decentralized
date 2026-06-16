@@ -3,7 +3,7 @@ import { initRooms } from './rooms.js'
 import { initDirectMessages } from './direct-messages.js'
 import { loadNickname, saveNickname } from './nickname.js'
 
-export async function initChat(node, port) {
+export const initChat = async (node, port) => {
   if (node.__chat_initialized) return
   node.__chat_initialized = true
   node.chat = {
@@ -33,7 +33,8 @@ export async function initChat(node, port) {
       await presence.setNickname(value)
     },
     getContacts: presence.getContacts,
-    getDisplayName: presence.getDisplayName
+    getDisplayName: presence.getDisplayName,
+    getPeerIdByNickname: presence.getPeerIdByNickname
   }
 
   node.chat.rooms = {

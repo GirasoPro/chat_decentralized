@@ -1,4 +1,4 @@
-export function initCommands(node, port) {
+export const initCommands = (node, port) => {
   const printHelp = () => {
     console.log('/whoami')
     console.log('/nick <name>')
@@ -12,7 +12,7 @@ export function initCommands(node, port) {
     console.log('/rooms')
     console.log('/who <room>')
     console.log('')
-    console.log('/msg <peerId> <message>')
+    console.log('/msg <peerId|nickname> <message>')
     console.log('')
     console.log('/help')
   }
@@ -120,10 +120,25 @@ export function initCommands(node, port) {
         }
         case 'msg': {
           if (!arg1 || !arg2) {
-            console.error('Usage: /msg <peerId> <message>')
+            console.error('Usage: /msg <peerId|nickname> <message>')
             break
           }
-          await node.chat.dm.sendDm(arg1, arg2)
+
+          let targetPeerId = node.chat.presence.getPeerIdByNickname(arg1)
+          if (targetPeerId === null) {
+            console.error(`Multiple peers share the nickname ${arg1}. Use peerId instead.`)
+            break
+          }
+
+          if (targetPeerId === undefined) {
+            if (!arg1.startsWith('12D') || arg1.length < 20) {
+              console.error(`Unknown nickname: ${arg1}`)
+              break
+            }
+            targetPeerId = arg1
+          }
+
+          await node.chat.dm.sendDm(targetPeerId, arg2)
           break
         }
         case 'help': {

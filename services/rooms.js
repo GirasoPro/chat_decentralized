@@ -2,7 +2,7 @@ const ROOM_DIRECTORY_TOPIC = 'room-directory'
 const ROOM_PRESENCE_TOPIC = 'room-presence'
 const ENCODER = new TextEncoder()
 
-export function initRooms(node, port) {
+export const initRooms = (node, port) => {
   const peerId = node.peerId.toString()
   const joinedRooms = new Set()
   const knownRooms = new Set()

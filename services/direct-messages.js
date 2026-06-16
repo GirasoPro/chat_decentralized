@@ -5,7 +5,7 @@ const getDmTopic = (peerA, peerB) => {
   return `dm:${first}:${second}`
 }
 
-export function initDirectMessages(node) {
+export const initDirectMessages = (node) => {
   const peerId = node.peerId.toString()
   const subscribedTopics = new Set()
 

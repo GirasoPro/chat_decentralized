@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { generateKeyPair, privateKeyToProtobuf, privateKeyFromProtobuf } from '@libp2p/crypto/keys'
 
-export async function loadIdentity(port) {
+export const loadIdentity = async (port) => {
   const keyFile = `./keys/peer-${port}.bin`
 
   if (fs.existsSync(keyFile)) {
