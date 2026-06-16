@@ -1,62 +1,61 @@
-const TOPIC = 'all'
+import { initPresence } from './presence.js'
+import { initRooms } from './rooms.js'
+import { initDirectMessages } from './direct-messages.js'
 
 export async function initChat(node, port) {
   if (node.__chat_initialized) return
   node.__chat_initialized = true
-  node.activeRoom = null
-
-  const joinedRooms = new Set()
-
-  const joinRoom = async (room) => {
-    if (joinedRooms.has(room)) return
-    await node.services.pubsub.subscribe(room)
-    joinedRooms.add(room)
-    console.log(`[${port}] joined room: ${room}`)
-  }
-
-  const leaveRoom = async (room) => {
-    if (!joinedRooms.has(room)) return
-    await node.services.pubsub.unsubscribe(room)
-    joinedRooms.delete(room)
-    console.log(`[${port}] left room: ${room}`)
-  }
-
-  const sendToRoom = async (room, message) => {
-    if (!joinedRooms.has(room)) {
-      console.error(`[${port}] Publish failed: not joined to room ${room}`)
-      return
-    }
-
-    const payload = JSON.stringify({
-      room,
-      from: port,
-      text: message,
-      timestamp: Date.now()
-    })
-
-    try {
-      const res = await node.services.pubsub.publish(room, new TextEncoder().encode(payload))
-      console.log(`[${port}] Published -> ${res.recipients.length} recipients`)
-    } catch (err) {
-      console.error(`[${port}] Publish failed: ${err.message}`)
-    }
-  }
-
   node.chat = {
-    joinRoom,
-    leaveRoom,
-    sendToRoom,
-    joinedRooms
+    activeRoom: null
   }
-  node.chat.joinRoom = joinRoom
-  node.chat.leaveRoom = leaveRoom
-  node.chat.sendToRoom = sendToRoom
-  node.chat.sendChat = async (text) => sendToRoom(TOPIC, text)
+
+  const peerId = node.peerId.toString()
+  const defaultNickname = `user-${peerId.slice(-8)}`
+
+  const dm = initDirectMessages(node)
+  const presence = initPresence(node, defaultNickname, async (otherPeerId) => {
+    await dm.ensureDmTopicWith(otherPeerId)
+  })
+  const rooms = initRooms(node, port)
+
+  await presence.start()
+  await rooms.start()
+
+  node.chat.presence = {
+    get nickname() {
+      return node.presence.nickname
+    },
+    setNickname: async (value) => {
+      await presence.setNickname(value)
+    },
+    getContacts: presence.getContacts,
+    getDisplayName: presence.getDisplayName
+  }
+
+  node.chat.rooms = {
+    joinedRooms: rooms.joinedRooms,
+    knownRooms: rooms.knownRooms,
+    roomMembers: rooms.roomMembers,
+    joinRoom: rooms.joinRoom,
+    leaveRoom: rooms.leaveRoom,
+    createRoom: rooms.createRoom,
+    sendToRoom: rooms.sendToRoom,
+    listRooms: rooms.listRooms,
+    listRoomMembers: rooms.listRoomMembers
+  }
+
+  node.chat.dm = {
+    sendDm: dm.sendDm,
+    ensureDmTopicWith: dm.ensureDmTopicWith
+  }
+
+  const joinedRooms = rooms.joinedRooms
 
   node.services.pubsub.addEventListener('gossipsub:message', (evt) => {
     const { propagationSource, msg } = evt.detail
-    const room = msg.topic
-    if (!joinedRooms.has(room)) return
+    const topic = msg.topic
+
+    if (!joinedRooms || !joinedRooms.has(topic)) return
 
     let data
     try {
@@ -65,10 +64,10 @@ export async function initChat(node, port) {
       return
     }
 
-    const peerId = propagationSource?.toString?.() ?? 'unknown'
+    const fromPeer = propagationSource?.toString?.() ?? 'unknown'
+    const nickname = node.chat.presence.getDisplayName(fromPeer)
     const text = String(data.text ?? '')
-    console.log(`[${room}] ${peerId.slice(0, 8)}: ${text}`)
-  })
 
-  await joinRoom(TOPIC)
+    console.log(`[${topic}] ${nickname}: ${text}`)
+  })
 }
