@@ -3,7 +3,7 @@ const PRESENCE_INTERVAL = 30000
 const OFFLINE_THRESHOLD = 90000
 const ENCODER = new TextEncoder()
 
-export function initPresence(node, initialNickname, onNewContact) {
+export function initPresence(node, initialNickname, onNewContact, onNicknameChange) {
   const peerId = node.peerId.toString()
   let nickname = initialNickname || `user-${peerId.slice(-8)}`
   const contacts = new Map()
@@ -21,6 +21,7 @@ export function initPresence(node, initialNickname, onNewContact) {
     try {
       await node.services.pubsub.publish(PRESENCE_TOPIC, ENCODER.encode(JSON.stringify(payload)))
     } catch (err) {
+      if (String(err.message).includes('NoPeersSubscribedToTopic')) return
       console.error('[presence] publish failed:', err.message)
     }
   }
@@ -88,6 +89,7 @@ export function initPresence(node, initialNickname, onNewContact) {
     }
 
     nickname = newNickname.trim()
+    await onNicknameChange?.(nickname)
     await publishPresence()
   }
 

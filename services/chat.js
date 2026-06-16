@@ -1,6 +1,7 @@
 import { initPresence } from './presence.js'
 import { initRooms } from './rooms.js'
 import { initDirectMessages } from './direct-messages.js'
+import { loadNickname, saveNickname } from './nickname.js'
 
 export async function initChat(node, port) {
   if (node.__chat_initialized) return
@@ -11,10 +12,13 @@ export async function initChat(node, port) {
 
   const peerId = node.peerId.toString()
   const defaultNickname = `user-${peerId.slice(-8)}`
+  const initialNickname = loadNickname(port, defaultNickname)
 
   const dm = initDirectMessages(node)
-  const presence = initPresence(node, defaultNickname, async (otherPeerId) => {
+  const presence = initPresence(node, initialNickname, async (otherPeerId) => {
     await dm.ensureDmTopicWith(otherPeerId)
+  }, async (newNickname) => {
+    saveNickname(port, newNickname)
   })
   const rooms = initRooms(node, port)
 
